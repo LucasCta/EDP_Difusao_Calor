@@ -1,35 +1,42 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-#define dT 1
-#define K 10
-#define dX 0.25
-#define iterations 50
+const double TIME_MAX = 0.5;
+const double K = 0.1;
+const double DX = 0.25;
+const double DT = 0.001;
 
 int main() {
 
-  long double **temp =
-      (long double **)malloc(sizeof(long double *) * (iterations + 1));
-  for (int t = 0; t <= iterations; t++)
-    temp[t] = (long double *)calloc(5, sizeof(long double));
+  int numSteps = TIME_MAX / DT;
+  double **T = (double **)malloc(sizeof(double *) * (numSteps + 1));
+  for (int t = 0; t <= numSteps; t++)
+    T[t] = (double *)calloc(5, sizeof(double));
 
-  temp[0][1] = 36;
-  temp[0][2] = 36;
-  temp[0][3] = 36;
+  T[0][1] = 36;
+  T[0][2] = 36;
+  T[0][3] = 36;
 
-  for (int t = 0; t < iterations; t++) {
-    long double r = (K * dT) / pow(dX, 2);
-    for (int i = 1; i < 4; i++)
-      temp[t + 1][i] = (r * temp[t][i - 1]) - ((1 + 2 * r) * temp[t][i]) +
-                       (r * temp[t][i + 1]);
+  for (int t = 0; t < numSteps; t++) {
+    double r = (K * DT) / pow(DX, 2);
+    for (int i = 1; i < 4; i++) {
+      T[t + 1][i] = T[t][i];
+      T[t + 1][i] += r * (T[t][i - 1] - 2 * T[t][i] + T[t][i + 1]);
+    }
   }
 
-  cout << "Matriz de Temperaturas\n";
-  for (int t = 0; t <= 50; t++) {
+  cout << fixed << setprecision(5);
+  for (int t = 0; t < numSteps; t++) {
     for (int i = 0; i < 5; i++)
-      cout << temp[t][i] << ' ';
+      cout << T[t][i] << ' ';
     cout << '\n';
   }
+
+  cout << fixed << setprecision(2);
+  cout << "\nFinal Temperature after " << TIME_MAX << "t\n";
+  for (int i = 0; i < 5; i++)
+    cout << T[numSteps][i] << ' ';
+  cout << '\n';
 
   return 0;
 }
