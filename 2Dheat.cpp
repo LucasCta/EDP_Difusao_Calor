@@ -10,7 +10,7 @@ SDL_Renderer *ren;
 int cellWidth, cellHeight;
 #define TIME_INTERVAL 50;
 
-const double MAX_TEMP = 100.0;
+const double MAX_TEMP = 300.0;
 const double MIN_TEMP = 0.0;
 const double BORDER_TEMP = 100.0;
 const double PLATE_TEMP = 0.0;
@@ -20,7 +20,7 @@ const int NY = 20;
 const double LENGTH_X = 1.0;
 const double LENGTH_Y = 1.0;
 const double TIME_MAX = 1.0;
-const double K = 0.1;
+const double K = 0.5;
 const double DX = LENGTH_X / (NX - 1);
 const double DY = LENGTH_Y / (NY - 1);
 const double DT = 0.001;
@@ -40,13 +40,16 @@ void drawMatrix(vector<vector<double>> &T) {
   SDL_Rect box = {0, 0, cellWidth, cellHeight};
   for (int i = 0; i < NX; i++) {
     for (int j = 0; j < NY; j++) {
-      int temp = T[i][j] - MAX_TEMP / 2;
+      int tempMedia = (MAX_TEMP - MIN_TEMP) / 2;
+      int temp = T[i][j] - tempMedia;
       if (temp >= 0)
-        SDL_SetRenderDrawColor(ren, 0xFF, 0x00, 0x00,
-                               (short)abs(2 * temp * (2.55)));
+        SDL_SetRenderDrawColor(
+            ren, 0xFF, 0x00, 0x00,
+            (short)abs(2 * temp * (255.0 / (tempMedia * 2))));
       else
-        SDL_SetRenderDrawColor(ren, 0x00, 0x00, 0xFF,
-                               (short)abs(2 * temp * (2.55)));
+        SDL_SetRenderDrawColor(
+            ren, 0x00, 0x00, 0xFF,
+            (short)abs(2 * temp * (255.0 / (tempMedia * 2))));
       SDL_RenderFillRect(ren, &box);
       box.x += cellWidth;
     }
@@ -84,6 +87,19 @@ void printT(const vector<vector<double>> &T) {
   cout << '\n';
 }
 
+void calculateEDP(vector<vector<double>> &T, vector<vector<double>> &newT) {
+  for (int i = 1; i < NX - 1; i++) {
+    for (int j = 1; j < NY - 1; j++) {
+      double rX = (K * DT) / pow(DX, 2);
+      double rY = (K * DT) / pow(DY, 2);
+      double dX = rX * (T[i][j - 1] - (2 * T[i][j]) + T[i][j + 1]);
+      double dY = rY * (T[i - 1][j] - (2 * T[i][j]) + T[i + 1][j]);
+      newT[i][j] = T[i][j] + dX + dY;
+    }
+  }
+  T = newT;
+}
+
 void simulateHeatTransfer(vector<vector<double>> &T) {
 
   vector<vector<double>> newT(NY, vector<double>(NX, 0.0));
@@ -93,6 +109,8 @@ void simulateHeatTransfer(vector<vector<double>> &T) {
   SDL_Point mouse;
   int espera = TIME_INTERVAL;
   Uint32 antes = SDL_GetTicks();
+  int mouseLPressed = false;
+  int mouseRPressed = false;
 
   char s[50];
   int numSteps = TIME_MAX / DT;
@@ -118,26 +136,31 @@ void simulateHeatTransfer(vector<vector<double>> &T) {
         if (SDL_WINDOWEVENT_CLOSE == evt.window.event)
           return;
         break;
+      case SDL_MOUSEMOTION:
+        SDL_GetMouseState(&mouse.x, &mouse.y);
+        if (mouseLPressed)
+          T[mouse.y / cellWidth][mouse.x / cellHeight] = MAX_TEMP;
+        else if (mouseRPressed)
+          T[mouse.y / cellWidth][mouse.x / cellHeight] = MIN_TEMP;
+        break;
       case SDL_MOUSEBUTTONDOWN:
         SDL_GetMouseState(&mouse.x, &mouse.y);
-        if (evt.button.button == SDL_BUTTON_LEFT)
+        if (evt.button.button == SDL_BUTTON_LEFT) {
           T[mouse.y / cellWidth][mouse.x / cellHeight] = MAX_TEMP;
-        else if (evt.button.button == SDL_BUTTON_RIGHT)
+          mouseLPressed = true;
+        } else if (evt.button.button == SDL_BUTTON_RIGHT) {
           T[mouse.y / cellWidth][mouse.x / cellHeight] = MIN_TEMP;
+          mouseRPressed = true;
+        }
+        break;
+      case SDL_MOUSEBUTTONUP:
+        mouseLPressed = false;
+        mouseRPressed = false;
         break;
       }
     } else {
       espera = TIME_INTERVAL;
-      for (int i = 1; i < NX - 1; i++) {
-        for (int j = 1; j < NY - 1; j++) {
-          double rX = (K * DT) / pow(DX, 2);
-          double rY = (K * DT) / pow(DY, 2);
-          double dX = rX * (T[i][j - 1] - (2 * T[i][j]) + T[i][j + 1]);
-          double dY = rY * (T[i - 1][j] - (2 * T[i][j]) + T[i + 1][j]);
-          newT[i][j] = T[i][j] + dX + dY;
-        }
-      }
-      T = newT;
+      calculateEDP(T, newT);
       step++;
     }
   }
