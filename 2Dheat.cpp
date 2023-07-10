@@ -12,15 +12,16 @@ int cellWidth, cellHeight;
 
 const double MAX_TEMP = 300.0;
 const double MIN_TEMP = 0.0;
-const double BORDER_TEMP = 100.0;
-const double PLATE_TEMP = 0.0;
+const int TEMP_MEDIA = (MAX_TEMP - MIN_TEMP) / 2;
+double BORDER_TEMP = 100.0;
+double PLATE_TEMP = 0.0;
 
 const int NX = 20;
 const int NY = 20;
 const double LENGTH_X = 1.0;
 const double LENGTH_Y = 1.0;
-const double TIME_MAX = 1.0;
-const double K = 0.5;
+// const double TIME_MAX = 1.0;
+double K = 0.5;
 const double DX = LENGTH_X / (NX - 1);
 const double DY = LENGTH_Y / (NY - 1);
 const double DT = 0.001;
@@ -40,16 +41,15 @@ void drawMatrix(vector<vector<double>> &T) {
   SDL_Rect box = {0, 0, cellWidth, cellHeight};
   for (int i = 0; i < NX; i++) {
     for (int j = 0; j < NY; j++) {
-      int tempMedia = (MAX_TEMP - MIN_TEMP) / 2;
-      int temp = T[i][j] - tempMedia;
+      int temp = T[i][j] - TEMP_MEDIA;
       if (temp >= 0)
         SDL_SetRenderDrawColor(
             ren, 0xFF, 0x00, 0x00,
-            (short)abs(2 * temp * (255.0 / (tempMedia * 2))));
+            (short)abs(2 * temp * (255.0 / (TEMP_MEDIA * 2))));
       else
         SDL_SetRenderDrawColor(
             ren, 0x00, 0x00, 0xFF,
-            (short)abs(2 * temp * (255.0 / (tempMedia * 2))));
+            (short)abs(2 * temp * (255.0 / (TEMP_MEDIA * 2))));
       SDL_RenderFillRect(ren, &box);
       box.x += cellWidth;
     }
@@ -113,8 +113,9 @@ void simulateHeatTransfer(vector<vector<double>> &T) {
   int mouseRPressed = false;
 
   char s[50];
-  int numSteps = TIME_MAX / DT;
-  for (int step = 0; step < numSteps;) {
+  // int numSteps = TIME_MAX / DT;
+  // for (int step = 0; step < numSteps;) {
+  for (int step = 0;;) {
 
     printT(T);
     cout << espera << "\n\n";
@@ -123,7 +124,7 @@ void simulateHeatTransfer(vector<vector<double>> &T) {
     SDL_SetRenderDrawColor(ren, 0xFF, 0xFF, 0xFF, 0x00);
     SDL_RenderClear(ren);
     drawMatrix(T);
-    stringRGBA(ren, 400, 20, s, 0x00, 0x00, 0x00, 0xFF);
+    stringRGBA(ren, 460, 20, s, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderPresent(ren);
 
     espera = MAX(0, espera - (int)(SDL_GetTicks() - antes));
@@ -135,6 +136,30 @@ void simulateHeatTransfer(vector<vector<double>> &T) {
       case SDL_WINDOWEVENT:
         if (SDL_WINDOWEVENT_CLOSE == evt.window.event)
           return;
+        break;
+      case SDL_KEYDOWN:
+        for (int i = 48; i <= 53; i++)
+          if (i == evt.key.keysym.sym)
+            K = (i - 48) / 10.0;
+        if (113 == evt.key.keysym.sym) {
+          BORDER_TEMP = MIN_TEMP;
+          initializeT(newT);
+        } else if (119 == evt.key.keysym.sym) {
+          BORDER_TEMP = TEMP_MEDIA;
+          initializeT(newT);
+        } else if (101 == evt.key.keysym.sym) {
+          BORDER_TEMP = MAX_TEMP;
+          initializeT(newT);
+        } else if (97 == evt.key.keysym.sym) {
+          PLATE_TEMP = MIN_TEMP;
+          initializeT(T);
+        } else if (115 == evt.key.keysym.sym) {
+          PLATE_TEMP = TEMP_MEDIA;
+          initializeT(T);
+        } else if (100 == evt.key.keysym.sym) {
+          PLATE_TEMP = MAX_TEMP;
+          initializeT(T);
+        }
         break;
       case SDL_MOUSEMOTION:
         SDL_GetMouseState(&mouse.x, &mouse.y);
@@ -175,7 +200,7 @@ int main() {
 
   SDL_Init(SDL_INIT_EVERYTHING);
   win = SDL_CreateWindow("Heat", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                         500, 500, SDL_WINDOW_SHOWN);
+                         1000, 1000, SDL_WINDOW_SHOWN);
   ren = SDL_CreateRenderer(win, -1, 0);
   SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
   SDL_GetWindowSize(win, &cellWidth, &cellHeight);
