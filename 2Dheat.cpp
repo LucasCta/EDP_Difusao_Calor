@@ -8,7 +8,7 @@ using namespace std;
 SDL_Window *win;
 SDL_Renderer *ren;
 int cellWidth, cellHeight;
-#define TIME_INTERVAL 50;
+#define TIME_INTERVAL 50
 
 const double MAX_TEMP = 300.0;
 const double MIN_TEMP = 0.0;
@@ -26,6 +26,7 @@ const double DX = LENGTH_X / (NX - 1);
 const double DY = LENGTH_Y / (NY - 1);
 const double DT = 0.001;
 
+// Função auxiliar para captar eventos na interface gráfica
 int AUX_WaitEventTimeoutCount(SDL_Event *evt, int &ms) {
   Uint32 antes = SDL_GetTicks();
   SDL_FlushEvent(SDL_MOUSEMOTION);
@@ -36,6 +37,7 @@ int AUX_WaitEventTimeoutCount(SDL_Event *evt, int &ms) {
   return 0;
 }
 
+// Desenha a matriz na interface gráfica
 void drawMatrix(vector<vector<double>> &T) {
 
   SDL_Rect box = {0, 0, cellWidth, cellHeight};
@@ -58,6 +60,7 @@ void drawMatrix(vector<vector<double>> &T) {
   }
 }
 
+// Inicializa a matriz de temperaturas com os valores iniciais
 void initializeT(vector<vector<double>> &T) {
   for (int i = 0; i < NY; i++)
     for (int j = 0; j < NX; j++)
@@ -72,6 +75,7 @@ void initializeT(vector<vector<double>> &T) {
   }
 }
 
+// Printa a matriz no terminal
 void printT(const vector<vector<double>> &T) {
   for (int i = 0; i < NY; i++) {
     for (int j = 0; j < NX; j++) {
@@ -87,6 +91,7 @@ void printT(const vector<vector<double>> &T) {
   cout << '\n';
 }
 
+// Calcula a Equacao Diferencial Parcial e atualiza a matriz
 void calculateEDP(vector<vector<double>> &T, vector<vector<double>> &newT) {
   double rX = (K * DT) / pow(DX, 2);
   double rY = (K * DT) / pow(DY, 2);
@@ -100,6 +105,7 @@ void calculateEDP(vector<vector<double>> &T, vector<vector<double>> &newT) {
   T = newT;
 }
 
+// Loop de Eventos para atualização da interface e da matriz
 void simulateHeatTransfer(vector<vector<double>> &T) {
 
   vector<vector<double>> newT(NY, vector<double>(NX, 0.0));
@@ -127,6 +133,7 @@ void simulateHeatTransfer(vector<vector<double>> &T) {
     stringRGBA(ren, 460, 20, s, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderPresent(ren);
 
+    // Atualiza a matriz a cada intervalo de tempo ou por input do usuário
     espera = MAX(0, espera - (int)(SDL_GetTicks() - antes));
     int isevt = AUX_WaitEventTimeoutCount(&evt, espera);
     antes = SDL_GetTicks();
@@ -196,6 +203,10 @@ void simulateHeatTransfer(vector<vector<double>> &T) {
   SDL_Delay(1000);
 }
 
+// Inicializa as variáveis do programa e inicia a simulação
+// Comandos: 0 1 2 3 4 5 -> Atualizam o valor da constante K (de 0.0 a 0.5)
+//           q w e -> Atualiza a temperatura da borda
+//           a s d -> Atualiza a temperatura da placa
 int main() {
 
   SDL_Init(SDL_INIT_EVERYTHING);
