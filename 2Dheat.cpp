@@ -88,10 +88,10 @@ void printT(const vector<vector<double>> &T) {
 }
 
 void calculateEDP(vector<vector<double>> &T, vector<vector<double>> &newT) {
+  double rX = (K * DT) / pow(DX, 2);
+  double rY = (K * DT) / pow(DY, 2);
   for (int i = 1; i < NX - 1; i++) {
     for (int j = 1; j < NY - 1; j++) {
-      double rX = (K * DT) / pow(DX, 2);
-      double rY = (K * DT) / pow(DY, 2);
       double dX = rX * (T[i][j - 1] - (2 * T[i][j]) + T[i][j + 1]);
       double dY = rY * (T[i - 1][j] - (2 * T[i][j]) + T[i + 1][j]);
       newT[i][j] = T[i][j] + dX + dY;
